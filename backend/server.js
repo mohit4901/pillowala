@@ -44,8 +44,10 @@ app.use(
   })
 );
 
-// CORS configuration: allow frontend & admin origins
+// CORS configuration: allow frontend & admin production domains, Vercel previews, and local development
 const allowedOrigins = [
+  'https://pillowala.vercel.app',
+  'https://www.pillowala.vercel.app',
   'http://localhost:5180',
   'http://localhost:5181',
   'http://127.0.0.1:5180',
@@ -57,18 +59,44 @@ const allowedOrigins = [
   'http://localhost:3000',
 ];
 
+// Add custom origins from environment if provided (comma-separated)
+if (process.env.ALLOWED_ORIGINS) {
+  const extraOrigins = process.env.ALLOWED_ORIGINS.split(',').map((o) => o.trim());
+  allowedOrigins.push(...extraOrigins);
+}
+
 app.use(
   cors({
     origin: (origin, callback) => {
-      // allow requests with no origin like mobile apps, curl, or same-origin
-      if (!origin || allowedOrigins.includes(origin) || process.env.NODE_ENV !== 'production') {
+      // Allow requests with no origin like curl, Postman, mobile apps, or same-origin
+      if (!origin) {
         return callback(null, true);
       }
-      return callback(new Error('Blocked by CORS policy'));
+
+      // Check explicit allowed list
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      // Dynamically allow any Pillowala Vercel deployment (production, preview branches, admin)
+      if (
+        origin.endsWith('.vercel.app') &&
+        (origin.includes('pillowala') || origin.includes('mohit4901'))
+      ) {
+        return callback(null, true);
+      }
+
+      // In development mode, allow any local or external origin
+      if (process.env.NODE_ENV !== 'production') {
+        return callback(null, true);
+      }
+
+      console.warn(`Blocked by CORS policy: ${origin}`);
+      return callback(new Error(`Blocked by CORS policy: ${origin}`));
     },
     credentials: true,
     methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   })
 );
 
