@@ -48,6 +48,8 @@ app.use(
 const allowedOrigins = [
   'https://pillowala.vercel.app',
   'https://www.pillowala.vercel.app',
+  'https://pillowala-admin.vercel.app',
+  'https://www.pillowala-admin.vercel.app',
   'http://localhost:5180',
   'http://localhost:5181',
   'http://127.0.0.1:5180',
