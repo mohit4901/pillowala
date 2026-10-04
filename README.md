@@ -121,9 +121,9 @@ Pillowala solves every major free-tier bottleneck to run reliably for **50,000 m
 - **Connection Pool Capping:** Configured with `maxPoolSize: 25`, `minPoolSize: 2`, and `maxIdleTimeMS: 30000` in [db.js](file:///Users/mohitmudgil/Desktop/pillowala/backend/config/db.js). Even under traffic surges, connection counts never exceed Atlas's 500-connection threshold.
 - **Memory Efficiency:** All catalog and review list queries use `.lean()`, bypassing Mongoose document overhead and halving memory usage.
 - **Compound Indexes:** Verified on Atlas for sub-3ms lookups:
-  - Reviews: `{ status: 1, createdAt: -1 }`, `{ orderId: 1 }`, `{ customerPhone: 1 }`, `{ luckyDrawMonth: 1, isLuckyDrawWinner: 1 }`
+  - Reviews: `{ status: 1, createdAt: -1 }`, `{ orderId: 1 }`, `{ customerPhone: 1 }`, `{ luckyDrawMilestone: 1, isLuckyDrawWinner: 1 }`
   - Products: `{ marketplace: 1 }`, `{ active: 1 }`, `{ categoryId: 1 }`
-  - LuckyDraw: `{ month: 1 }` (`unique: true`)
+  - LuckyDraw: `{ milestoneNumber: 1 }` (`unique: true`)
 
 ### 2. Cloudinary Zero-Burn Bandwidth (25 GB Free Monthly Limit)
 - **Client-Side Compression:** When a customer selects a 5MB–10MB phone screenshot, their mobile browser's GPU compresses it via HTML5 Canvas into a **~30 KB WebP in <150ms** before uploading.
@@ -246,14 +246,15 @@ cd admin && npm run dev
 | `/api/products/:id` | `PATCH` | Private (Admin) | Updates catalog product details or active status |
 | `/api/products/:id` | `DELETE` | Private (Admin) | Deletes catalog product |
 
-### Lucky Draw Engine
+### Review Milestone Lucky Draw Engine (600, 1000, 1500)
 | Endpoint | Method | Access | Description |
 | :--- | :--- | :--- | :--- |
-| `/api/luckydraw/current` | `GET` | Public | Returns current published draw winners with masked phone numbers |
-| `/api/luckydraw/history` | `GET` | Public | Returns all historical published draws |
-| `/api/luckydraw/admin/eligible`| `GET` | Private (Admin) | Counts eligible participants and platform breakdown for the month |
-| `/api/luckydraw/admin/draw` | `POST` | Private (Admin) | Conducts cryptographically fair random draw for 1st, 2nd, 3rd places |
-| `/api/luckydraw/admin/:id/publish`| `PATCH` | Private (Admin) | Toggles published/draft state of draw results on customer storefront |
+| `/api/luckydraw/current` | `GET` | Public | Returns live review milestone progress (600, 1000, 1500) and published winners |
+| `/api/luckydraw/history` | `GET` | Public | Returns all completed milestone draws |
+| `/api/luckydraw/admin/eligible`| `GET` | Private (Admin) | Returns milestone progress, eligible counts (600, 999, 1498), and previous winners |
+| `/api/luckydraw/admin/draw` | `POST` | Private (Admin) | Conducts cryptographically fair random draw with strict past winner elimination |
+| `/api/luckydraw/admin/:id/publish`| `PATCH` | Private (Admin) | Toggles published/draft state of milestone results |
+| `/api/luckydraw/admin/:id` | `DELETE` | Private (Admin) | Resets a milestone draw and restores review eligibility |
 
 ### Image Upload
 | Endpoint | Method | Access | Description |

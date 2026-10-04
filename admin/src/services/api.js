@@ -183,8 +183,8 @@ export const uploadImage = async (file) => {
 };
 
 // Lucky Draw Management
-export const getAdminLuckyDrawEligible = async (month) => {
-  const response = await api.get('/luckydraw/admin/eligible', { params: { month } });
+export const getAdminLuckyDrawEligible = async (params = {}) => {
+  const response = await api.get('/luckydraw/admin/eligible', { params });
   return response.data;
 };
 

@@ -64,13 +64,22 @@ const reviewSchema = new mongoose.Schema(
       default: false,
       index: true,
     },
+    luckyDrawMilestone: {
+      type: Number, // 1 (600 reviews), 2 (1000 reviews), 3 (1500 reviews)
+      default: null,
+      index: true,
+    },
+    luckyDrawPrize: {
+      type: String, // e.g. "₹5,000 Cash"
+      default: null,
+    },
     luckyDrawMonth: {
-      type: String, // "YYYY-MM"
+      type: String, // Legacy support
       default: null,
       index: true,
     },
     luckyDrawPosition: {
-      type: Number, // 1, 2, 3
+      type: Number,
       default: null,
     },
   },

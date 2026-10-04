@@ -3,7 +3,6 @@ import {
   Trophy,
   Gift,
   Sparkles,
-  Calendar,
   CheckCircle2,
   AlertCircle,
   Eye,
@@ -16,6 +15,12 @@ import {
   Shuffle,
   Clock,
   Check,
+  Lock,
+  Flame,
+  Award,
+  Phone,
+  Mail,
+  ShoppingBag,
 } from 'lucide-react';
 import {
   getAdminLuckyDrawEligible,
@@ -26,44 +31,26 @@ import {
 } from '../services/api';
 
 export default function LuckyDrawPage() {
-  const now = new Date();
-  const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-
-  const [selectedMonth, setSelectedMonth] = useState(currentMonthStr);
-  const [eligibleData, setEligibleData] = useState(null);
+  const [adminData, setAdminData] = useState(null);
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [drawing, setDrawing] = useState(false);
+  const [drawingMilestone, setDrawingMilestone] = useState(null);
   const [actionSuccess, setActionSuccess] = useState('');
   const [actionError, setActionError] = useState('');
   const [previewImage, setPreviewImage] = useState(null);
+  const [adminOverride, setAdminOverride] = useState(false);
 
-  // Month list generator (last 6 months + next month)
-  const generateMonthOptions = () => {
-    const options = [];
-    const base = new Date();
-    for (let i = -5; i <= 1; i++) {
-      const d = new Date(base.getFullYear(), base.getMonth() + i, 1);
-      const val = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-      const label = d.toLocaleString('en-US', { month: 'long', year: 'numeric' });
-      options.push({ val, label });
-    }
-    return options.reverse();
-  };
-
-  const monthOptions = generateMonthOptions();
-
-  const loadData = async (month = selectedMonth) => {
+  const loadData = async () => {
     try {
       setLoading(true);
       setActionError('');
       const [eligibleRes, historyRes] = await Promise.all([
-        getAdminLuckyDrawEligible(month),
+        getAdminLuckyDrawEligible(),
         getLuckyDrawHistory(),
       ]);
 
       if (eligibleRes.success) {
-        setEligibleData(eligibleRes.data);
+        setAdminData(eligibleRes.data);
       }
       if (historyRes.success) {
         setHistory(historyRes.data || []);
@@ -77,23 +64,24 @@ export default function LuckyDrawPage() {
   };
 
   useEffect(() => {
-    loadData(selectedMonth);
-  }, [selectedMonth]);
+    loadData();
+  }, []);
 
-  const handleConductDraw = async () => {
+  const handleConductDraw = async (milestoneNumber) => {
     try {
-      setDrawing(true);
+      setDrawingMilestone(milestoneNumber);
       setActionError('');
       setActionSuccess('');
 
       const res = await conductAdminLuckyDraw({
-        month: selectedMonth,
+        milestoneNumber,
+        adminOverride,
         status: 'published',
       });
 
       if (res.success) {
-        setActionSuccess(`🎉 3 Lucky Draw Winners successfully selected and published for ${eligibleData?.monthLabel || selectedMonth}!`);
-        await loadData(selectedMonth);
+        setActionSuccess(res.message || `🎉 Milestone ${milestoneNumber} draw successfully conducted!`);
+        await loadData();
       } else {
         setActionError(res.message || 'Draw failed.');
       }
@@ -101,7 +89,7 @@ export default function LuckyDrawPage() {
       console.error('Lucky draw error:', err);
       setActionError(err.response?.data?.message || 'Error conducting draw.');
     } finally {
-      setDrawing(false);
+      setDrawingMilestone(null);
     }
   };
 
@@ -109,456 +97,564 @@ export default function LuckyDrawPage() {
     try {
       const res = await toggleLuckyDrawPublish(drawId);
       if (res.success) {
-        setActionSuccess(`Lucky Draw status updated to ${res.data?.status}`);
-        await loadData(selectedMonth);
+        setActionSuccess(`Milestone status updated to ${res.data?.status}`);
+        await loadData();
       }
     } catch (err) {
       setActionError('Failed to toggle status.');
     }
   };
 
-  const handleDelete = async (drawId) => {
-    if (!window.confirm('Are you sure you want to reset this lucky draw? The winning records will be cleared and you can draw again.')) {
+  const handleResetDraw = async (drawId, milestoneNumber) => {
+    if (
+      !window.confirm(
+        `Are you sure you want to reset Milestone ${milestoneNumber} draw? The winning review will be restored to the eligible pool and you will be able to draw again.`
+      )
+    ) {
       return;
     }
     try {
       const res = await deleteLuckyDraw(drawId);
       if (res.success) {
-        setActionSuccess('Lucky draw reset successfully.');
-        await loadData(selectedMonth);
+        setActionSuccess(`Milestone ${milestoneNumber} draw reset successfully.`);
+        await loadData();
       }
     } catch (err) {
       setActionError('Failed to reset draw.');
     }
   };
 
-  const currentDraw = eligibleData?.existingDraw;
-  const winners = currentDraw?.winners || [];
+  const totalApproved = adminData?.totalApprovedReviews ?? 0;
+  const milestones = adminData?.milestones || [];
+  const previousWinners = adminData?.previousWinners || [];
+  const sampleEligible = adminData?.sampleEligible || [];
 
   return (
-    <div className="p-6 lg:p-8 space-y-6 max-w-7xl mx-auto">
+    <div className="p-6 lg:p-8 space-y-8 max-w-7xl mx-auto">
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-stone-200 pb-5">
         <div>
           <div className="flex items-center gap-2">
             <span className="p-2 rounded-xl bg-amber-500/10 text-amber-600">
-              <Trophy size={24} />
+              <Trophy size={26} />
             </span>
             <h1 className="text-2xl font-bold text-stone-900 tracking-tight">
-              Monthly Mega Lucky Draw
+              Milestone Review Lucky Draw Engine
             </h1>
           </div>
           <p className="text-xs sm:text-sm text-stone-500 mt-1">
-            Randomly draw 3 verified customer winners (1st, 2nd, 3rd) from month-end review responses & publish to website.
+            Review thresholds at <strong>600 (₹5K)</strong>, <strong>1,000 (₹10K)</strong>, and <strong>1,500 (₹15K)</strong>. Past winners are permanently eliminated from future draws.
           </p>
         </div>
 
-        {/* Month Selector */}
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 bg-white px-3.5 py-2 rounded-xl border border-stone-200 shadow-xs">
-            <Calendar size={16} className="text-amber-600" />
-            <select
-              value={selectedMonth}
-              onChange={(e) => setSelectedMonth(e.target.value)}
-              className="text-xs font-bold text-stone-800 bg-transparent outline-none cursor-pointer"
-            >
-              {monthOptions.map((opt) => (
-                <option key={opt.val} value={opt.val}>
-                  {opt.label} {opt.val === currentMonthStr ? '(Current)' : ''}
-                </option>
-              ))}
-            </select>
-          </div>
+          <label className="flex items-center gap-2 text-xs font-mono bg-stone-100 px-3 py-2 rounded-xl border border-stone-300 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={adminOverride}
+              onChange={(e) => setAdminOverride(e.target.checked)}
+              className="rounded text-amber-600 focus:ring-amber-500"
+            />
+            <span className="font-bold text-stone-800">Admin Test Mode</span>
+            <span className="text-[10px] text-stone-500">(Bypass review count)</span>
+          </label>
 
           <button
-            onClick={() => loadData(selectedMonth)}
+            type="button"
+            onClick={loadData}
             disabled={loading}
-            className="p-2.5 rounded-xl border border-stone-200 bg-white hover:bg-stone-50 text-stone-600 hover:text-stone-900 shadow-xs transition-colors cursor-pointer"
-            title="Refresh Data"
+            className="px-4 py-2 rounded-xl bg-stone-900 hover:bg-stone-800 text-white text-xs font-mono font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all cursor-pointer shadow-xs"
           >
-            <RotateCcw size={16} className={loading ? 'animate-spin' : ''} />
+            <RotateCcw size={13} className={loading ? 'animate-spin' : ''} />
+            <span>Refresh</span>
           </button>
         </div>
       </div>
 
-      {/* Action Messages */}
+      {/* Notifications */}
       {actionSuccess && (
-        <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center justify-between">
+        <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-300 text-emerald-800 text-xs sm:text-sm font-semibold flex items-center justify-between shadow-xs">
           <div className="flex items-center gap-2">
-            <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
+            <CheckCircle2 size={18} className="text-emerald-600 shrink-0" />
             <span>{actionSuccess}</span>
           </div>
-          <button onClick={() => setActionSuccess('')} className="text-emerald-600 hover:text-emerald-900 text-xs">
-            Dismiss
+          <button
+            type="button"
+            onClick={() => setActionSuccess('')}
+            className="text-emerald-700 hover:text-emerald-950 font-bold ml-4"
+          >
+            ✕
           </button>
         </div>
       )}
 
       {actionError && (
-        <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-800 text-xs font-semibold flex items-center justify-between">
+        <div className="p-4 rounded-2xl bg-rose-50 border border-rose-300 text-rose-800 text-xs sm:text-sm font-semibold flex items-center justify-between shadow-xs">
           <div className="flex items-center gap-2">
-            <AlertCircle size={16} className="text-red-600 shrink-0" />
+            <AlertCircle size={18} className="text-rose-600 shrink-0" />
             <span>{actionError}</span>
           </div>
-          <button onClick={() => setActionError('')} className="text-red-600 hover:text-red-900 text-xs">
-            Dismiss
+          <button
+            type="button"
+            onClick={() => setActionError('')}
+            className="text-rose-700 hover:text-rose-950 font-bold ml-4"
+          >
+            ✕
           </button>
         </div>
       )}
 
-      {/* Month Statistics Overview Cards */}
+      {/* Overview Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="p-5 rounded-2xl bg-white border border-stone-200 shadow-xs space-y-1">
-          <div className="flex items-center justify-between text-stone-500 text-xs font-semibold">
-            <span>Total Month Submissions</span>
-            <Users size={16} className="text-stone-400" />
+          <div className="flex items-center justify-between text-xs font-mono text-stone-500">
+            <span>Verified Reviews</span>
+            <Users size={16} className="text-amber-600" />
           </div>
-          <p className="text-2xl font-extrabold text-stone-900">
-            {eligibleData?.totalInMonth || 0}
-          </p>
-          <span className="text-[11px] text-stone-400">All customer review responses</span>
+          <div className="text-3xl font-black text-stone-900 font-mono">
+            {totalApproved}
+          </div>
+          <div className="text-[11px] text-stone-400">Total approved in database</div>
         </div>
 
         <div className="p-5 rounded-2xl bg-white border border-stone-200 shadow-xs space-y-1">
-          <div className="flex items-center justify-between text-emerald-700 text-xs font-semibold">
-            <span>Screenshot Verified</span>
-            <ShieldCheck size={16} className="text-emerald-600" />
+          <div className="flex items-center justify-between text-xs font-mono text-stone-500">
+            <span>Completed Draws</span>
+            <CheckCircle2 size={16} className="text-emerald-600" />
           </div>
-          <p className="text-2xl font-extrabold text-emerald-700">
-            {eligibleData?.withScreenshot || 0}
-          </p>
-          <span className="text-[11px] text-stone-400">Valid proof attached for draw</span>
+          <div className="text-3xl font-black text-stone-900 font-mono">
+            {previousWinners.length} / 3
+          </div>
+          <div className="text-[11px] text-stone-400">Milestones drawn</div>
         </div>
 
         <div className="p-5 rounded-2xl bg-white border border-stone-200 shadow-xs space-y-1">
-          <div className="flex items-center justify-between text-amber-700 text-xs font-semibold">
-            <span>Marketplace Distribution</span>
-            <Sparkles size={16} className="text-amber-500" />
+          <div className="flex items-center justify-between text-xs font-mono text-stone-500">
+            <span>Total Cash Pool</span>
+            <Award size={16} className="text-amber-600" />
           </div>
-          <div className="flex items-center gap-2 pt-1">
-            {eligibleData?.platformBreakdown?.map((pb) => (
-              <span
-                key={pb._id}
-                className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-stone-100 text-stone-700"
-              >
-                {pb._id}: {pb.count}
-              </span>
-            ))}
-            {(!eligibleData?.platformBreakdown || eligibleData.platformBreakdown.length === 0) && (
-              <span className="text-xs text-stone-400">No submissions yet</span>
-            )}
+          <div className="text-3xl font-black text-stone-900 font-mono">
+            ₹30,000
           </div>
-          <span className="text-[11px] text-stone-400">Amazon, Flipkart, Meesho</span>
+          <div className="text-[11px] text-stone-400">₹5K + ₹10K + ₹15K Cash</div>
         </div>
 
         <div className="p-5 rounded-2xl bg-white border border-stone-200 shadow-xs space-y-1">
-          <div className="flex items-center justify-between text-stone-500 text-xs font-semibold">
-            <span>Draw Status</span>
-            <Clock size={16} className="text-stone-400" />
+          <div className="flex items-center justify-between text-xs font-mono text-stone-500">
+            <span>Eliminated Winners</span>
+            <ShieldCheck size={16} className="text-blue-600" />
           </div>
-          <div className="pt-0.5">
-            {currentDraw ? (
-              <span
-                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${
-                  currentDraw.status === 'published'
-                    ? 'bg-emerald-100 text-emerald-800'
-                    : 'bg-amber-100 text-amber-800'
-                }`}
-              >
-                <Check size={12} />
-                <span>{currentDraw.status === 'published' ? 'Live on Frontend' : 'Draft / Hidden'}</span>
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-stone-100 text-stone-600">
-                <span>Not Drawn Yet</span>
-              </span>
-            )}
+          <div className="text-3xl font-black text-stone-900 font-mono">
+            {previousWinners.length}
           </div>
-          <span className="text-[11px] text-stone-400">{eligibleData?.monthLabel || selectedMonth}</span>
+          <div className="text-[11px] text-stone-400">Excluded from upcoming draws</div>
         </div>
       </div>
 
-      {/* Main Draw Action / Winners Showcase Area */}
-      <div className="p-6 rounded-3xl bg-white border border-stone-200 shadow-sm space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-stone-100 pb-5">
-          <div>
-            <h2 className="text-lg font-bold text-stone-900 flex items-center gap-2">
-              <Gift size={20} className="text-amber-500" />
-              <span>Official Winners for {eligibleData?.monthLabel || selectedMonth}</span>
-            </h2>
-            <p className="text-xs text-stone-500 mt-0.5">
-              {currentDraw
-                ? `Conducted on ${new Date(currentDraw.drawDate).toLocaleDateString()} with ${currentDraw.totalEligibleParticipants} eligible participants.`
-                : 'Click button below to trigger the random 3-winner draw for this month.'}
-            </p>
-          </div>
-
-          <div className="flex items-center gap-3">
-            {currentDraw && (
-              <>
-                <button
-                  type="button"
-                  onClick={() => handleTogglePublish(currentDraw._id)}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer border ${
-                    currentDraw.status === 'published'
-                      ? 'border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100'
-                      : 'border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
-                  }`}
-                >
-                  {currentDraw.status === 'published' ? 'Hide from Frontend' : 'Publish to Frontend'}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleDelete(currentDraw._id)}
-                  className="p-2 rounded-xl text-stone-400 hover:text-red-600 hover:bg-red-50 border border-stone-200 transition-colors cursor-pointer"
-                  title="Reset and clear draw"
-                >
-                  <Trash2 size={16} />
-                </button>
-              </>
-            )}
-
-            <button
-              type="button"
-              disabled={drawing}
-              onClick={handleConductDraw}
-              className="px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 active:scale-95 text-white text-xs font-bold shadow-md shadow-amber-600/20 flex items-center gap-2 transition-all cursor-pointer"
-            >
-              <Shuffle size={15} className={drawing ? 'animate-spin' : ''} />
-              <span>{drawing ? 'Drawing Random Winners...' : currentDraw ? 'Re-Draw (Shuffle Again)' : '🎲 Conduct Random Lucky Draw'}</span>
-            </button>
-          </div>
+      {/* 3 Milestone Control Cards */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-bold text-stone-900 flex items-center gap-2">
+            <Flame size={20} className="text-amber-500" />
+            <span>Milestone Draws Control Panel</span>
+          </h2>
+          {adminOverride && (
+            <span className="text-xs font-mono font-bold text-amber-700 bg-amber-100 px-3 py-1 rounded-full border border-amber-300">
+              ⚡ Admin Test Mode Active (Bypassing Threshold Checks)
+            </span>
+          )}
         </div>
 
-        {/* 3 Positions Display: 1st, 2nd, 3rd */}
-        {winners.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {winners.map((winner) => {
-              const isGold = winner.position === 1;
-              const isSilver = winner.position === 2;
-              const isBronze = winner.position === 3;
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {milestones.map((m) => {
+            const isCompleted = m.isCompleted;
+            const draw = m.draw;
+            const winner = draw?.winner;
+            const isDrawing = drawingMilestone === m.milestoneNumber;
 
-              const badgeColor = isGold
-                ? 'from-amber-400 via-amber-500 to-yellow-600 text-white'
-                : isSilver
-                ? 'from-slate-400 via-stone-400 to-stone-500 text-white'
-                : 'from-amber-700 via-amber-800 to-amber-900 text-white';
+            const isLockedSequence =
+              m.milestoneNumber > 1 &&
+              !adminOverride &&
+              !milestones.find((prev) => prev.milestoneNumber === m.milestoneNumber - 1)?.isCompleted;
 
-              const platformColors = {
-                amazon: 'bg-amber-100 text-amber-800 border-amber-300',
-                flipkart: 'bg-blue-100 text-blue-800 border-blue-300',
-                meesho: 'bg-rose-100 text-rose-800 border-rose-300',
-              };
+            const canDrawNow =
+              !isCompleted &&
+              !isLockedSequence &&
+              (totalApproved >= m.target || adminOverride);
 
-              return (
-                <div
-                  key={winner.position}
-                  className={`relative rounded-3xl p-6 border transition-all duration-200 ${
-                    isGold
-                      ? 'border-amber-400 bg-gradient-to-b from-amber-50/50 to-white ring-2 ring-amber-400/30 shadow-lg'
-                      : 'border-stone-200 bg-white shadow-sm hover:shadow-md'
-                  }`}
-                >
-                  {/* Position Badge */}
+            const tierMeta = {
+              1: {
+                accent: 'border-stone-300 bg-white',
+                headerBadge: 'bg-stone-100 text-stone-800 border-stone-300',
+                poolLabel: '600 Eligible Participants',
+                ruleDetail: 'All first 600 verified reviews eligible.',
+              },
+              2: {
+                accent: 'border-amber-300 bg-gradient-to-b from-amber-50/20 via-white to-white ring-1 ring-amber-400/20',
+                headerBadge: 'bg-amber-100 text-amber-900 border-amber-300',
+                poolLabel: '999 Eligible Participants',
+                ruleDetail: 'Milestone 1 winner permanently excluded (1000 - 1 = 999).',
+              },
+              3: {
+                accent: 'border-yellow-400 bg-gradient-to-b from-yellow-50/30 via-white to-white ring-2 ring-yellow-400/30 shadow-md',
+                headerBadge: 'bg-gradient-to-r from-amber-400 to-yellow-500 text-stone-950 font-bold',
+                poolLabel: '1,498 Eligible Participants',
+                ruleDetail: 'Milestone 1 & 2 winners permanently excluded (1500 - 2 = 1498).',
+              },
+            }[m.milestoneNumber];
+
+            return (
+              <div
+                key={m.milestoneNumber}
+                className={`rounded-3xl p-6 border flex flex-col justify-between transition-all ${tierMeta.accent}`}
+              >
+                <div>
+                  {/* Top Bar */}
                   <div className="flex items-center justify-between mb-4">
-                    <span
-                      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider bg-gradient-to-r ${badgeColor} shadow-xs`}
-                    >
-                      <Trophy size={13} />
-                      <span>Position #{winner.position}</span>
+                    <span className={`px-3 py-1 rounded-full text-xs font-mono font-bold uppercase tracking-wider border ${tierMeta.headerBadge}`}>
+                      Milestone {m.milestoneNumber} // {m.target} Reviews
                     </span>
 
-                    <span
-                      className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
-                        platformColors[winner.purchasePlatform] || 'bg-stone-100 text-stone-700'
-                      }`}
-                    >
-                      {winner.purchasePlatform}
-                    </span>
+                    {isCompleted ? (
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1">
+                        <CheckCircle2 size={12} />
+                        <span>Completed</span>
+                      </span>
+                    ) : isLockedSequence ? (
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider bg-stone-100 text-stone-500 border border-stone-200 flex items-center gap-1">
+                        <Lock size={12} />
+                        <span>Sequence Locked</span>
+                      </span>
+                    ) : totalApproved >= m.target || adminOverride ? (
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider bg-amber-400 text-stone-950 flex items-center gap-1 animate-pulse">
+                        <Sparkles size={12} />
+                        <span>Ready to Draw</span>
+                      </span>
+                    ) : (
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider bg-stone-100 text-stone-600 border border-stone-200 flex items-center gap-1">
+                        <Clock size={12} />
+                        <span>In Progress</span>
+                      </span>
+                    )}
                   </div>
 
-                  {/* Prize Details */}
+                  {/* Cash Prize Display */}
                   <div className="space-y-1 mb-4">
-                    <p className="text-xs font-mono font-bold text-amber-700 uppercase tracking-wider">
-                      {winner.prizeValue || (isGold ? '₹12,499 Value' : isSilver ? '₹5,999 Value' : '₹2,499 Value')}
-                    </p>
-                    <h3 className="font-bold text-stone-900 text-sm leading-snug">
-                      {winner.prizeTitle}
+                    <span className="text-[11px] font-mono font-bold text-amber-700 uppercase tracking-widest block">
+                      Direct Cash Prize
+                    </span>
+                    <h3 className="text-3xl font-black text-stone-900 tracking-tight font-mono">
+                      ₹{m.prizeAmount.toLocaleString('en-IN')}
                     </h3>
                   </div>
 
-                  {/* Customer Information */}
-                  <div className="p-3.5 rounded-2xl bg-stone-50 border border-stone-100 space-y-2 text-xs">
-                    <div className="flex justify-between items-center">
-                      <span className="text-stone-400 font-medium">Winner:</span>
-                      <span className="font-bold text-stone-900">{winner.customerName}</span>
+                  {/* Pool & Elimination Formula */}
+                  <div className="p-3.5 rounded-2xl bg-stone-50 border border-stone-200 text-xs font-mono space-y-1 mb-5">
+                    <div className="flex justify-between items-center text-stone-800">
+                      <span className="text-stone-500">Target Pool:</span>
+                      <span className="font-bold text-amber-800">{tierMeta.poolLabel}</span>
                     </div>
-
-                    <div className="flex justify-between items-center">
-                      <span className="text-stone-400 font-medium">Contact:</span>
-                      <span className="font-mono text-stone-700 font-semibold">
-                        {winner.customerPhone || winner.customerPhoneMasked || 'N/A'}
-                      </span>
-                    </div>
-
-                    {winner.orderId && (
-                      <div className="flex justify-between items-center">
-                        <span className="text-stone-400 font-medium">Order ID:</span>
-                        <span className="font-mono text-stone-700 font-semibold">{winner.orderId}</span>
-                      </div>
-                    )}
-
-                    <div className="flex justify-between items-center">
-                      <span className="text-stone-400 font-medium">Product:</span>
-                      <span className="font-medium text-stone-800 truncate max-w-[160px]" title={winner.productName}>
-                        {winner.productName}
-                      </span>
-                    </div>
-
-                    <div className="flex justify-between items-center pt-1 border-t border-stone-200">
-                      <span className="text-stone-400 font-medium">Rating:</span>
-                      <span className="flex items-center text-amber-500 font-bold gap-0.5">
-                        <Star size={13} fill="currentColor" />
-                        <span>{winner.rating} / 5</span>
-                      </span>
+                    <div className="text-[11px] text-stone-500 pt-1 border-t border-stone-200">
+                      ⚖️ {tierMeta.ruleDetail}
                     </div>
                   </div>
 
-                  {/* Screenshot Proof Preview */}
-                  {winner.imageUrl ? (
-                    <div className="mt-4 pt-3 border-t border-stone-100 flex items-center justify-between">
-                      <span className="text-[11px] font-semibold text-emerald-700 flex items-center gap-1">
-                        <ShieldCheck size={13} />
-                        <span>Screenshot Proof Attached</span>
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => setPreviewImage(winner.imageUrl)}
-                        className="text-xs text-amber-700 hover:text-amber-900 font-semibold flex items-center gap-1 cursor-pointer"
-                      >
-                        <Eye size={13} />
-                        <span>View Proof</span>
-                      </button>
+                  {/* Winner Details Card (if completed) */}
+                  {isCompleted && winner ? (
+                    <div className="p-4 rounded-2xl bg-emerald-50/60 border border-emerald-200 space-y-3 text-xs mb-4">
+                      <div className="flex items-center justify-between pb-2 border-b border-emerald-200">
+                        <span className="font-bold text-emerald-950 text-sm flex items-center gap-1.5">
+                          <Trophy size={14} className="text-amber-500" />
+                          <span>Winner Declared</span>
+                        </span>
+                        <span className="px-2 py-0.5 rounded text-[10px] font-mono uppercase font-bold bg-white text-emerald-800 border border-emerald-200">
+                          {winner.purchasePlatform}
+                        </span>
+                      </div>
+
+                      <div className="space-y-1.5 font-mono">
+                        <div className="flex justify-between text-stone-800">
+                          <span className="text-stone-500">Name:</span>
+                          <span className="font-bold">{winner.customerName}</span>
+                        </div>
+                        <div className="flex justify-between text-stone-800">
+                          <span className="text-stone-500">Phone:</span>
+                          <a
+                            href={`https://wa.me/91${winner.customerPhone?.replace(/[^0-9]/g, '').slice(-10)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="font-bold text-emerald-700 hover:underline flex items-center gap-1"
+                          >
+                            <Phone size={11} />
+                            <span>{winner.customerPhone || 'N/A'}</span>
+                          </a>
+                        </div>
+                        <div className="flex justify-between text-stone-800">
+                          <span className="text-stone-500">Email:</span>
+                          <span className="truncate max-w-[150px]">{winner.customerEmail || 'N/A'}</span>
+                        </div>
+                        <div className="flex justify-between text-stone-800">
+                          <span className="text-stone-500">Order ID:</span>
+                          <span>{winner.orderId || 'N/A'}</span>
+                        </div>
+                      </div>
+
+                      {winner.imageUrl && (
+                        <button
+                          type="button"
+                          onClick={() => setPreviewImage(winner.imageUrl)}
+                          className="w-full mt-2 py-1.5 rounded-lg bg-white border border-emerald-300 text-emerald-800 text-[11px] font-mono font-bold flex items-center justify-center gap-1 hover:bg-emerald-100 transition-colors cursor-pointer"
+                        >
+                          <Eye size={12} />
+                          <span>View Review Screenshot</span>
+                        </button>
+                      )}
                     </div>
                   ) : (
-                    <div className="mt-4 pt-3 border-t border-stone-100 text-[11px] text-stone-400">
-                      No screenshot attached
+                    /* Progress Bar towards target */
+                    <div className="space-y-2 p-4 rounded-2xl bg-stone-50 border border-stone-200 mb-4">
+                      <div className="flex justify-between text-xs font-mono">
+                        <span className="text-stone-500">Review Progress:</span>
+                        <span className="text-stone-900 font-bold">{Math.min(totalApproved, m.target)} / {m.target}</span>
+                      </div>
+                      <div className="w-full bg-stone-200 rounded-full h-2.5 overflow-hidden">
+                        <div
+                          className="bg-amber-500 h-full rounded-full transition-all duration-500"
+                          style={{ width: `${Math.min(100, Math.max(2, (totalApproved / m.target) * 100))}%` }}
+                        />
+                      </div>
+                      <div className="flex justify-between text-[11px] font-mono text-stone-500">
+                        <span>{m.progressPercent}% Target</span>
+                        <span className="text-amber-800 font-bold">
+                          {totalApproved >= m.target ? 'Target Met!' : `${m.target - totalApproved} reviews needed`}
+                        </span>
+                      </div>
                     </div>
                   )}
                 </div>
-              );
-            })}
+
+                {/* Bottom Action Buttons */}
+                <div className="pt-3 border-t border-stone-200/80">
+                  {isCompleted ? (
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleTogglePublish(draw._id)}
+                        className="flex-1 py-2.5 rounded-xl border border-stone-300 hover:bg-stone-100 text-xs font-mono font-bold uppercase tracking-wider text-stone-700 transition-colors"
+                      >
+                        {draw.status === 'published' ? 'Unpublish' : 'Publish'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleResetDraw(draw._id, m.milestoneNumber)}
+                        className="p-2.5 rounded-xl border border-rose-200 hover:bg-rose-50 text-rose-600 transition-colors"
+                        title="Reset this milestone draw"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled={!canDrawNow || isDrawing}
+                      onClick={() => handleConductDraw(m.milestoneNumber)}
+                      className={`w-full py-3 rounded-xl font-mono text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs ${
+                        canDrawNow
+                          ? 'bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-stone-950 font-black shadow-md'
+                          : 'bg-stone-200 text-stone-400 cursor-not-allowed'
+                      }`}
+                    >
+                      <Shuffle size={14} className={isDrawing ? 'animate-spin' : ''} />
+                      <span>
+                        {isDrawing
+                          ? 'Conducting Fair Draw...'
+                          : canDrawNow
+                          ? `Draw ₹${m.prizeAmount.toLocaleString('en-IN')} Winner`
+                          : isLockedSequence
+                          ? `Milestone ${m.milestoneNumber - 1} Required First`
+                          : `Need ${m.target - totalApproved} Reviews`}
+                      </span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Winners Hall of Fame & Payment Disbursal Desk */}
+      <div className="bg-white rounded-3xl p-6 sm:p-8 border border-stone-200 shadow-xs space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-stone-100 pb-4">
+          <div>
+            <h3 className="text-lg font-bold text-stone-900 flex items-center gap-2">
+              <Gift size={20} className="text-amber-500" />
+              <span>Winners Hall of Fame & Cash Disbursal Desk</span>
+            </h3>
+            <p className="text-xs text-stone-500 mt-0.5">
+              Contact declared winners directly on WhatsApp/Phone to transfer their cash prize via UPI.
+            </p>
+          </div>
+          <span className="text-xs font-mono font-bold text-stone-600 bg-stone-100 px-3 py-1 rounded-lg">
+            {previousWinners.length} Winners Declared
+          </span>
+        </div>
+
+        {previousWinners.length === 0 ? (
+          <div className="text-center py-10 text-stone-400 font-mono text-xs">
+            No milestone draws conducted yet. Reach 600 reviews to unlock Milestone 1!
           </div>
         ) : (
-          <div className="text-center py-12 px-4 space-y-4">
-            <div className="w-16 h-16 rounded-full bg-amber-50 text-amber-600 mx-auto flex items-center justify-center">
-              <Gift size={32} />
-            </div>
-            <div className="space-y-1">
-              <h3 className="font-bold text-stone-800 text-base">
-                No Lucky Draw Conducted for {eligibleData?.monthLabel || selectedMonth} Yet
-              </h3>
-              <p className="text-xs text-stone-500 max-w-md mx-auto">
-                There are {eligibleData?.totalInMonth || 0} reviews recorded this month. Click the button below to randomly pick the 1st, 2nd, and 3rd place winners!
-              </p>
-            </div>
-            <button
-              type="button"
-              disabled={drawing}
-              onClick={handleConductDraw}
-              className="px-6 py-3 rounded-full bg-black hover:bg-stone-800 text-white text-xs font-bold tracking-wider uppercase shadow-md transition-all cursor-pointer"
-            >
-              🎲 Draw 3 Random Winners Now
-            </button>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs font-mono border-collapse">
+              <thead>
+                <tr className="border-b border-stone-200 text-stone-500 text-[11px] uppercase tracking-wider">
+                  <th className="py-3 px-3">Milestone</th>
+                  <th className="py-3 px-3">Cash Prize</th>
+                  <th className="py-3 px-3">Winner Name</th>
+                  <th className="py-3 px-3">Contact (WhatsApp/UPI)</th>
+                  <th className="py-3 px-3">Order ID</th>
+                  <th className="py-3 px-3">Platform</th>
+                  <th className="py-3 px-3">Draw Date</th>
+                  <th className="py-3 px-3 text-right">Proof</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-stone-100">
+                {previousWinners.map((pw, i) => (
+                  <tr key={i} className="hover:bg-stone-50 transition-colors">
+                    <td className="py-3 px-3">
+                      <span className="px-2 py-1 rounded font-bold bg-amber-100 text-amber-900 border border-amber-200">
+                        Milestone {pw.milestoneNumber} ({pw.milestoneTarget} Reviews)
+                      </span>
+                    </td>
+                    <td className="py-3 px-3 font-bold text-emerald-700 text-sm">
+                      ₹{pw.prizeAmount.toLocaleString('en-IN')} Cash
+                    </td>
+                    <td className="py-3 px-3 font-bold text-stone-900">
+                      {pw.winner.customerName}
+                    </td>
+                    <td className="py-3 px-3">
+                      <a
+                        href={`https://wa.me/91${pw.winner.customerPhone?.replace(/[^0-9]/g, '').slice(-10)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-emerald-700 font-bold hover:underline inline-flex items-center gap-1"
+                      >
+                        <Phone size={12} />
+                        <span>{pw.winner.customerPhone || 'N/A'}</span>
+                      </a>
+                    </td>
+                    <td className="py-3 px-3 text-stone-600">{pw.winner.orderId || 'N/A'}</td>
+                    <td className="py-3 px-3 uppercase">{pw.winner.purchasePlatform}</td>
+                    <td className="py-3 px-3 text-stone-500">
+                      {new Date(pw.drawDate).toLocaleDateString('en-IN', {
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric',
+                      })}
+                    </td>
+                    <td className="py-3 px-3 text-right">
+                      {pw.winner.imageUrl && (
+                        <button
+                          type="button"
+                          onClick={() => setPreviewImage(pw.winner.imageUrl)}
+                          className="text-amber-700 hover:text-amber-600 font-bold underline cursor-pointer"
+                        >
+                          View
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
 
-      {/* History / Archive Table */}
-      {history.length > 0 && (
-        <div className="p-6 rounded-3xl bg-white border border-stone-200 shadow-sm space-y-4">
-          <h2 className="text-base font-bold text-stone-900 flex items-center gap-2">
-            <Clock size={18} className="text-stone-500" />
-            <span>Past Lucky Draw Archive</span>
-          </h2>
+      {/* Eligible Participants Queue (Sample) */}
+      <div className="bg-white rounded-3xl p-6 sm:p-8 border border-stone-200 shadow-xs space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-base font-bold text-stone-900 flex items-center gap-2">
+              <Users size={18} className="text-amber-600" />
+              <span>Eligible Verified Reviews Queue (First-Come Sequence)</span>
+            </h3>
+            <p className="text-xs text-stone-500">
+              Only verified reviews with <strong>approved</strong> status participate. Previous winners are automatically filtered out.
+            </p>
+          </div>
+          <span className="text-xs font-mono font-bold text-stone-500">
+            Showing {sampleEligible.length} of {totalApproved - previousWinners.length} eligible
+          </span>
+        </div>
 
+        {sampleEligible.length === 0 ? (
+          <div className="text-center py-8 text-stone-400 font-mono text-xs">
+            No approved reviews found in database. Approve customer reviews in the Reviews tab.
+          </div>
+        ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-stone-50 text-stone-500 uppercase font-mono tracking-wider border-b border-stone-200">
-                <tr>
-                  <th className="p-3">Month</th>
-                  <th className="p-3">Draw Date</th>
-                  <th className="p-3">Participants</th>
-                  <th className="p-3">1st Position</th>
-                  <th className="p-3">2nd Position</th>
-                  <th className="p-3">3rd Position</th>
-                  <th className="p-3">Status</th>
-                  <th className="p-3 text-right">Actions</th>
+            <table className="w-full text-left text-xs font-mono border-collapse">
+              <thead>
+                <tr className="border-b border-stone-200 text-stone-500 text-[11px] uppercase tracking-wider">
+                  <th className="py-2.5 px-3">Customer</th>
+                  <th className="py-2.5 px-3">Phone</th>
+                  <th className="py-2.5 px-3">Platform</th>
+                  <th className="py-2.5 px-3">Rating</th>
+                  <th className="py-2.5 px-3">Product</th>
+                  <th className="py-2.5 px-3">Submitted At</th>
+                  <th className="py-2.5 px-3 text-right">Proof</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-stone-100 text-stone-700">
-                {history.map((h) => {
-                  const first = h.winners?.find((w) => w.position === 1);
-                  const second = h.winners?.find((w) => w.position === 2);
-                  const third = h.winners?.find((w) => w.position === 3);
-
-                  return (
-                    <tr key={h._id} className="hover:bg-stone-50/70">
-                      <td className="p-3 font-bold text-stone-900">{h.monthLabel}</td>
-                      <td className="p-3 text-stone-500">{new Date(h.drawDate).toLocaleDateString()}</td>
-                      <td className="p-3 font-mono font-semibold">{h.totalEligibleParticipants}</td>
-                      <td className="p-3 font-semibold text-amber-700">
-                        {first?.customerName || 'N/A'} ({first?.purchasePlatform})
-                      </td>
-                      <td className="p-3 font-semibold text-stone-600">
-                        {second?.customerName || 'N/A'} ({second?.purchasePlatform})
-                      </td>
-                      <td className="p-3 font-semibold text-stone-600">
-                        {third?.customerName || 'N/A'} ({third?.purchasePlatform})
-                      </td>
-                      <td className="p-3">
-                        <span
-                          className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
-                            h.status === 'published'
-                              ? 'bg-emerald-100 text-emerald-800'
-                              : 'bg-stone-100 text-stone-600'
-                          }`}
-                        >
-                          {h.status}
-                        </span>
-                      </td>
-                      <td className="p-3 text-right space-x-2">
+              <tbody className="divide-y divide-stone-100">
+                {sampleEligible.slice(0, 15).map((rev) => (
+                  <tr key={rev._id} className="hover:bg-stone-50 transition-colors">
+                    <td className="py-2.5 px-3 font-bold text-stone-900">{rev.customerName}</td>
+                    <td className="py-2.5 px-3 text-stone-600">{rev.customerPhone || 'N/A'}</td>
+                    <td className="py-2.5 px-3 uppercase">{rev.purchasePlatform}</td>
+                    <td className="py-2.5 px-3 text-amber-500 font-bold">{rev.rating} ★</td>
+                    <td className="py-2.5 px-3 text-stone-600 truncate max-w-[200px]">{rev.productName}</td>
+                    <td className="py-2.5 px-3 text-stone-500">
+                      {new Date(rev.createdAt).toLocaleDateString('en-IN', {
+                        day: 'numeric',
+                        month: 'short',
+                      })}
+                    </td>
+                    <td className="py-2.5 px-3 text-right">
+                      {rev.imageUrl ? (
                         <button
                           type="button"
-                          onClick={() => setSelectedMonth(h.month)}
-                          className="px-2.5 py-1 rounded-lg border border-stone-200 hover:bg-stone-100 text-stone-700 text-xs font-semibold cursor-pointer"
+                          onClick={() => setPreviewImage(rev.imageUrl)}
+                          className="text-amber-700 hover:text-amber-600 font-bold underline cursor-pointer"
                         >
-                          View / Edit
+                          View
                         </button>
-                      </td>
-                    </tr>
-                  );
-                })}
+                      ) : (
+                        <span className="text-stone-300">None</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
-      {/* Proof Modal */}
+      {/* Image Preview Modal */}
       {previewImage && (
         <div
           onClick={() => setPreviewImage(null)}
-          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4 cursor-pointer"
+          className="fixed inset-0 z-50 bg-black/85 backdrop-blur-xs flex items-center justify-center p-4 cursor-pointer"
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="bg-white rounded-3xl p-4 max-w-lg w-full max-h-[90vh] overflow-hidden flex flex-col items-center gap-3 shadow-2xl"
+            className="bg-white rounded-3xl p-5 max-w-lg w-full max-h-[90vh] overflow-hidden flex flex-col items-center gap-3 shadow-2xl"
           >
-            <div className="w-full flex justify-between items-center px-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-stone-700">
-                Review Screenshot Proof
+            <div className="w-full flex justify-between items-center px-1">
+              <span className="text-xs font-bold uppercase tracking-wider text-stone-800">
+                Review Proof Screenshot
               </span>
               <button
                 type="button"
