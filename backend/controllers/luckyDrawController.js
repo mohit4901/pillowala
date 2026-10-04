@@ -70,8 +70,11 @@ const maskCustomerName = (name) => {
 // @access  Public
 const getCurrentDraw = async (req, res, next) => {
   try {
-    // 1. Total verified approved reviews
+    // 1. Review Counts
+    const totalSubmittedReviews = await Review.countDocuments({});
     const totalApprovedReviews = await Review.countDocuments({ status: 'approved' });
+    const totalPendingReviews = await Review.countDocuments({ status: 'pending' });
+    const nextReviewNumber = totalSubmittedReviews + 1;
 
     // 2. Fetch completed/published milestone draws
     const publishedDraws = await LuckyDraw.find({ status: 'published' })
@@ -83,7 +86,7 @@ const getCurrentDraw = async (req, res, next) => {
       completedMap[d.milestoneNumber] = d;
     });
 
-    // 3. Compute milestone cards status
+    // 3. Compute milestone cards status (based on total approved reviews, or total submitted for display)
     const milestones = [1, 2, 3].map((num) => {
       const cfg = MILESTONE_CONFIGS[num];
       const completedDraw = completedMap[num];
@@ -111,27 +114,36 @@ const getCurrentDraw = async (req, res, next) => {
     // Find active milestone
     let activeMilestone = milestones.find((m) => m.status !== 'completed') || null;
 
-    // Recent 8 verified reviews ticker
-    const recentReviews = await Review.find({ status: 'approved' })
+    // Recent submitted reviews queue (including all submitted so users see their live entry #)
+    const recentReviews = await Review.find({})
       .sort({ createdAt: -1 })
-      .limit(8)
-      .select('customerName customerPhone purchasePlatform rating productName createdAt imageUrl')
+      .limit(12)
+      .select('customerName customerPhone purchasePlatform rating productName createdAt imageUrl status')
       .lean();
 
-    const formattedRecent = recentReviews.map((r) => ({
-      customerName: maskCustomerName(r.customerName),
-      customerPhoneMasked: maskPhoneNumber(r.customerPhone),
-      purchasePlatform: r.purchasePlatform,
-      rating: r.rating,
-      productName: r.productName,
-      createdAt: r.createdAt,
-      hasProof: Boolean(r.imageUrl),
-    }));
+    const formattedRecent = recentReviews.map((r, idx) => {
+      const entryNum = totalSubmittedReviews - idx;
+      return {
+        entryNumber: entryNum,
+        entryLabel: `Review #${entryNum}`,
+        customerName: maskCustomerName(r.customerName),
+        customerPhoneMasked: maskPhoneNumber(r.customerPhone),
+        purchasePlatform: r.purchasePlatform,
+        rating: r.rating,
+        productName: r.productName,
+        createdAt: r.createdAt,
+        hasProof: Boolean(r.imageUrl),
+        status: r.status,
+      };
+    });
 
     res.status(200).json({
       success: true,
       data: {
+        totalSubmittedReviews,
         totalApprovedReviews,
+        totalPendingReviews,
+        nextReviewNumber,
         activeMilestoneNumber: activeMilestone ? activeMilestone.milestoneNumber : 3,
         activeMilestone,
         milestones,

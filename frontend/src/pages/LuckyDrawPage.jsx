@@ -39,6 +39,8 @@ export default function LuckyDrawPage() {
   }, []);
 
   const totalReviews = data?.totalApprovedReviews ?? 0;
+  const totalSubmitted = data?.totalSubmittedReviews ?? totalReviews;
+  const nextReviewNum = data?.nextReviewNumber ?? (totalSubmitted + 1);
   const milestones = data?.milestones || [
     {
       milestoneNumber: 1,
@@ -129,12 +131,17 @@ export default function LuckyDrawPage() {
           <div className="pt-4 flex flex-wrap items-center justify-center gap-3 text-xs font-mono">
             <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-stone-800 border border-stone-700 text-stone-200">
               <Users size={14} className="text-amber-400" />
-              <span><strong>{totalReviews} Verified Reviews</strong> in System</span>
+              <span><strong>{totalSubmitted} Total Reviews Submitted</strong></span>
             </div>
 
-            <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-300">
-              <Award size={14} />
-              <span>Total Cash Pool: <strong>₹30,000 Direct Cash</strong></span>
+            <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500/25 to-yellow-500/25 border-2 border-amber-400 text-amber-300 shadow-sm">
+              <Sparkles size={14} className="text-amber-400 animate-pulse" />
+              <span>Aapka Submission: <strong className="text-white underline decoration-amber-400">Review #{nextReviewNum}</strong> Hoga!</span>
+            </div>
+
+            <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-stone-800 border border-stone-700 text-stone-200">
+              <Award size={14} className="text-amber-400" />
+              <span>Cash Pool: <strong>₹30,000 Direct Cash</strong></span>
             </div>
           </div>
         </div>
@@ -477,35 +484,69 @@ export default function LuckyDrawPage() {
           </div>
         </div>
 
-        {/* Live Entries / Recent Participants Ticker */}
-        {recent.length > 0 && (
-          <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-stone-200 space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-base font-bold text-stone-900 flex items-center gap-2">
-                <Users size={18} className="text-amber-600" />
-                <span>Recent Verified Review Entries</span>
-              </h3>
-              <span className="text-xs font-mono text-stone-400">Live Queue</span>
+        {/* Live Entries / Recent Participants Queue */}
+        <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-stone-200 space-y-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-stone-100 pb-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="p-1.5 rounded-lg bg-amber-500/10 text-amber-600">
+                  <Flame size={18} />
+                </span>
+                <h3 className="text-base sm:text-lg font-bold text-stone-900 tracking-tight">
+                  Live Review Submissions Queue ({totalSubmitted} Reviews Received)
+                </h3>
+              </div>
+              <p className="text-xs text-stone-500 mt-1">
+                Abhi tak kul <strong>{totalSubmitted} reviews</strong> submit ho chuke hain. Har submission ko ek official Entry # milta hai!
+              </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              {recent.map((item, idx) => (
-                <div
-                  key={idx}
-                  className="p-3.5 rounded-xl bg-stone-50 border border-stone-200 flex items-center justify-between text-xs"
-                >
-                  <div className="min-w-0 pr-2">
-                    <p className="font-bold text-stone-900 truncate">{item.customerName}</p>
-                    <p className="text-[11px] text-stone-500 truncate">{item.productName}</p>
-                  </div>
-                  <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-white border border-stone-200 text-stone-700 shrink-0">
-                    {item.purchasePlatform}
-                  </span>
-                </div>
-              ))}
+            <div className="flex items-center gap-2 self-start sm:self-auto">
+              <span className="px-3.5 py-1.5 rounded-full text-xs font-mono font-bold bg-gradient-to-r from-amber-400 to-yellow-500 text-stone-950 shadow-xs flex items-center gap-1.5">
+                <Sparkles size={13} className="text-stone-950 animate-pulse" />
+                <span>Aapka Review: #{nextReviewNum} Hoga!</span>
+              </span>
             </div>
           </div>
-        )}
+
+          {recent.length === 0 ? (
+            <div className="text-center py-8 text-xs font-mono text-stone-400">
+              Abhi tak koi review submit nahi hua hai. Pehla review dekar Review #1 banein!
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+              {recent.map((item, idx) => {
+                const entryNum = item.entryNumber || (totalSubmitted - idx);
+                return (
+                  <div
+                    key={idx}
+                    className="p-4 rounded-2xl bg-stone-50 hover:bg-amber-50/30 border border-stone-200 hover:border-amber-300 transition-all flex flex-col justify-between space-y-2.5 shadow-2xs"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="px-2.5 py-1 rounded-lg text-xs font-mono font-black bg-stone-950 text-amber-300 shadow-2xs flex items-center gap-1.5">
+                        <CheckCircle2 size={12} className="text-amber-400" />
+                        <span>Review #{entryNum}</span>
+                      </span>
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-white border border-stone-200 text-stone-700">
+                        {item.purchasePlatform}
+                      </span>
+                    </div>
+
+                    <div>
+                      <p className="text-xs text-stone-800 font-semibold line-clamp-1" title={item.productName}>
+                        {item.productName || 'Pillowala Premium Product'}
+                      </p>
+                      <div className="flex items-center justify-between text-[11px] font-mono text-stone-500 mt-1.5 pt-1.5 border-t border-stone-200/70">
+                        <span className="text-amber-600 font-bold">★ {item.rating || 5} Star Verified</span>
+                        <span className="text-emerald-700 font-semibold">Lucky Ticket Active</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
 
         {/* FAQ Section */}
         <div className="bg-white rounded-3xl p-6 sm:p-10 shadow-sm border border-stone-200 space-y-6">

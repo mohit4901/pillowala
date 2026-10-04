@@ -26,6 +26,7 @@ export default function ReviewSuccessPage() {
   const customerPhone = state.customerPhone || '';
   const orderId = state.orderId || '';
   const productName = state.productName || '';
+  const reviewNumber = state.reviewNumber || '1';
 
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -79,10 +80,26 @@ export default function ReviewSuccessPage() {
             <CheckCircle2 size={44} strokeWidth={2.5} />
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-3">
             <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-[11px] font-mono-tech font-bold uppercase tracking-widest bg-emerald-100 text-emerald-800 border border-emerald-200">
               <Sparkles size={13} className="text-emerald-700" />
               <span>REVIEW SUBMITTED // LUCKY DRAW ENTRY CONFIRMED</span>
+            </div>
+
+            {/* Prominent Review Number Showcase */}
+            <div className="max-w-sm mx-auto p-4 rounded-2xl bg-gradient-to-r from-amber-500/15 via-yellow-500/25 to-amber-500/15 border-2 border-amber-400 text-stone-900 font-mono shadow-xs">
+              <div className="flex items-center justify-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-stone-950 text-amber-400 flex flex-col items-center justify-center shadow-md border border-amber-400/40">
+                  <span className="text-[9px] uppercase font-bold text-stone-400">ENTRY</span>
+                  <span className="text-base font-black leading-none text-amber-300">#{reviewNumber}</span>
+                </div>
+                <div className="text-left">
+                  <span className="text-xs text-stone-500 font-bold block uppercase tracking-wider">Aapka Official Review Ticket:</span>
+                  <p className="text-lg font-black text-stone-900 font-sans">
+                    Review #{reviewNumber} Confirmed!
+                  </p>
+                </div>
+              </div>
             </div>
 
             <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl font-black uppercase tracking-tight text-stone-900 leading-tight">
@@ -91,11 +108,11 @@ export default function ReviewSuccessPage() {
 
             <p className="text-stone-500 text-xs sm:text-sm max-w-lg mx-auto leading-relaxed">
               Your {platformName} review proof for Order{' '}
-              <span className="font-mono font-bold text-black">#{orderId || 'VERIFIED'}</span> has been successfully received and entered into our monthly lucky draw.
+              <span className="font-mono font-bold text-black">#{orderId || 'VERIFIED'}</span> has been successfully recorded as <strong>Review #{reviewNumber}</strong> and entered into our milestone cash draws.
             </p>
           </div>
 
-          {/* THE ₹30,000 MONTH-END MEGA LUCKY DRAW CARD */}
+          {/* THE ₹30,000 MILESTONE MEGA CASH DRAW CARD */}
           <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-amber-500 via-amber-600 to-orange-600 text-white shadow-2xl border-2 border-amber-300 text-left space-y-5 relative overflow-hidden">
             {/* Background glowing watermark */}
             <div className="absolute -right-8 -bottom-8 opacity-10 pointer-events-none text-white">
@@ -108,66 +125,66 @@ export default function ReviewSuccessPage() {
                   <Trophy size={18} />
                 </div>
                 <span className="font-display font-black text-xs sm:text-sm uppercase tracking-wider text-white">
-                  MONTH-END LUCKY DRAW
+                  MILESTONE CASH DRAW
                 </span>
               </div>
               <span className="px-3 py-1 rounded-full text-[10px] font-mono-tech font-bold uppercase tracking-wider bg-black/30 text-amber-200 border border-white/20">
-                TOTAL PRIZES WORTH ₹30,000
+                TOTAL CASH POOL: ₹30,000
               </span>
             </div>
 
-            {/* Lucky Draw Main Announcement in Clean English */}
+            {/* Lucky Draw Main Announcement */}
             <div className="space-y-2">
               <h3 className="font-display text-xl sm:text-2xl lg:text-3xl font-black uppercase tracking-tight text-white leading-tight">
-                3 LUCKY CUSTOMERS WILL WIN EXCITING PRIZES WORTH ₹30,000!
+                WIN UP TO ₹15,000 CASH AT 600, 1,000 & 1,500 REVIEWS!
               </h3>
               <p className="text-xs sm:text-sm text-amber-100 leading-relaxed font-normal">
-                At the end of every month, <strong>3 lucky customers</strong> are selected through our lucky draw to win <strong>exciting prizes worth ₹30,000</strong>. Winners will be announced directly on WhatsApp and our website!
+                Draws automatically unlock at <strong>600</strong> (₹5K), <strong>1,000</strong> (₹10K), and <strong>1,500</strong> (₹15K) reviews! Once a customer wins, they are eliminated from subsequent draws so everyone gets higher odds.
               </p>
             </div>
 
-            {/* 3 Prize Breakdown Grid */}
+            {/* 3 Milestone Prize Breakdown Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
               <div className="p-3.5 rounded-2xl bg-black/25 backdrop-blur-md border border-white/15 space-y-1">
                 <span className="text-[10px] font-mono-tech text-yellow-300 font-bold block">
-                  🥇 1ST PRIZE
+                  🥈 MILESTONE 1 (600 REVIEWS)
                 </span>
                 <p className="font-display font-black text-base uppercase text-white">
-                  Prizes Worth ₹15,000
+                  ₹5,000 Direct Cash
                 </p>
                 <p className="text-[10px] text-amber-200 font-mono-tech">
-                  Selected by monthly lucky draw
+                  600 Participants // 1 Winner
                 </p>
               </div>
 
               <div className="p-3.5 rounded-2xl bg-black/25 backdrop-blur-md border border-white/15 space-y-1">
                 <span className="text-[10px] font-mono-tech text-yellow-300 font-bold block">
-                  🥈 2ND PRIZE
+                  🥇 MILESTONE 2 (1,000 REVIEWS)
                 </span>
                 <p className="font-display font-black text-base uppercase text-white">
-                  Prizes Worth ₹10,000
+                  ₹10,000 Direct Cash
                 </p>
                 <p className="text-[10px] text-amber-200 font-mono-tech">
-                  Selected by monthly lucky draw
+                  999 Participants (1st Winner Excluded)
                 </p>
               </div>
 
               <div className="p-3.5 rounded-2xl bg-black/25 backdrop-blur-md border border-white/15 space-y-1">
                 <span className="text-[10px] font-mono-tech text-yellow-300 font-bold block">
-                  🥉 3RD PRIZE
+                  👑 MILESTONE 3 (1,500 REVIEWS)
                 </span>
                 <p className="font-display font-black text-base uppercase text-white">
-                  Prizes Worth ₹5,000
+                  ₹15,000 Mega Cash
                 </p>
                 <p className="text-[10px] text-amber-200 font-mono-tech">
-                  Selected by monthly lucky draw
+                  1,498 Participants (1st & 2nd Excluded)
                 </p>
               </div>
             </div>
 
             <div className="p-3 rounded-xl bg-black/40 border border-white/10 text-[11px] font-mono-tech text-amber-200 flex items-center justify-between">
-              <span>WINNER ANNOUNCEMENT:</span>
-              <span className="font-bold text-white uppercase">Directly on WhatsApp at Month-End</span>
+              <span>PRIZE DISBURSAL:</span>
+              <span className="font-bold text-white uppercase">Directly via UPI on WhatsApp When Target Met</span>
             </div>
           </div>
 
@@ -209,7 +226,7 @@ export default function ReviewSuccessPage() {
             </div>
 
             <div className="px-5 py-2.5 bg-black/60 border-t border-stone-800 text-[10px] font-mono-tech text-stone-400 flex items-center justify-between">
-              <span>MONTH-END LUCKY DRAW ENTRY</span>
+              <span>MILESTONE LUCKY DRAW ENTRY</span>
               <span className="text-emerald-400 font-bold">LUCKY TICKET ACTIVE</span>
             </div>
           </div>

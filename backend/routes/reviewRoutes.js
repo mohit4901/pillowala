@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const {
   createReview,
+  checkOrderIdAvailability,
   getReviews,
   getReviewById,
   updateReviewStatus,
@@ -51,6 +52,9 @@ router.get('/export', protectAdmin, (req, res, next) => {
 router.route('/')
   .post(reviewSubmitLimiter, validateReview, createReview)
   .get(optionalAdmin, getReviews);
+
+// Public Order ID duplicate checker
+router.get('/check-order/:orderId', checkOrderIdAvailability);
 
 router.route('/:id')
   .get(getReviewById)

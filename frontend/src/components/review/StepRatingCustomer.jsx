@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Star, ArrowLeft, Send, Loader2, ShieldCheck, Gift, Phone, Mail, Hash, User, Sparkles, CheckCircle2, Trophy } from 'lucide-react';
 import StarRating from '../common/StarRating';
+import { checkOrderIdAvailability } from '../../services/api';
 
 export default function StepRatingCustomer({
   rating,
@@ -66,11 +67,26 @@ export default function StepRatingCustomer({
     return Object.keys(errors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateInputs()) {
       return;
     }
+
+    // Check if Order ID has already been submitted in the system
+    try {
+      const res = await checkOrderIdAvailability(orderId.trim());
+      if (res.available === false) {
+        setFieldErrors((prev) => ({
+          ...prev,
+          orderId: '⚠️ Ye Order ID pehle se submit ho chuki hai! Ek order ID se sirf 1 review allow hai.',
+        }));
+        return;
+      }
+    } catch (errCheck) {
+      console.warn('Order ID check error:', errCheck);
+    }
+
     setFieldErrors({});
     onSubmit();
   };
@@ -92,7 +108,7 @@ export default function StepRatingCustomer({
           VERIFY & SUBMIT REVIEW
         </h2>
         <p className="text-stone-500 text-xs sm:text-sm max-w-md mx-auto leading-relaxed">
-          Enter your {platformName} order details to verify your review and enter the ₹30,000 monthly lucky draw.
+          Enter your {platformName} order details to verify your review and enter the ₹30,000 milestone lucky draws.
         </p>
       </div>
 
@@ -110,14 +126,14 @@ export default function StepRatingCustomer({
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <span className="font-display font-black text-xs sm:text-sm text-stone-900 uppercase tracking-tight">
-              Month-End Mega Lucky Draw
+              Review Milestone Cash Draw
             </span>
             <span className="text-[9px] font-mono-tech font-bold px-2 py-0.5 rounded-full bg-amber-200 text-amber-900">
-              3 WINNERS
+              600, 1000 & 1500 REVIEWS
             </span>
           </div>
           <p className="text-[11px] text-stone-700 leading-relaxed font-mono-tech">
-            Every month-end, <strong>3 lucky customers</strong> will win <strong>exciting prizes worth ₹30,000</strong> in our lucky draw!
+            At 600 reviews (<strong>₹5,000</strong>), 1,000 reviews (<strong>₹10,000</strong>), and 1,500 reviews (<strong>₹15,000</strong>), lucky draws unlock! Past winners are eliminated from future draws to boost your odds.
           </p>
         </div>
       </div>
@@ -158,6 +174,19 @@ export default function StepRatingCustomer({
             onChange={(e) => {
               onChangeOrderId(e.target.value);
               if (fieldErrors.orderId) setFieldErrors((prev) => ({ ...prev, orderId: null }));
+            }}
+            onBlur={async () => {
+              if (orderId && orderId.trim().length >= 3) {
+                try {
+                  const res = await checkOrderIdAvailability(orderId.trim());
+                  if (res.available === false) {
+                    setFieldErrors((prev) => ({
+                      ...prev,
+                      orderId: '⚠️ Ye Order ID pehle se submit ho chuki hai! Ek order ID se sirf 1 review allow hai.',
+                    }));
+                  }
+                } catch (e) {}
+              }
             }}
             placeholder={
               platform === 'flipkart'

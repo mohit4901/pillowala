@@ -26,7 +26,7 @@ export default function IamHero() {
               className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-500/15 border border-amber-500/40 text-amber-900 text-[11px] font-mono font-bold tracking-wider uppercase hover:bg-amber-500/25 transition-all shadow-xs group"
             >
               <Sparkles size={13} className="text-amber-600 animate-pulse" />
-              <span>₹30,000 MONTH-END LUCKY DRAW // 3 WINNERS</span>
+              <span>₹30,000 MILESTONE CASH DRAWS // 600, 1000 & 1500 REVIEWS</span>
               <ArrowRight size={12} className="text-amber-700 group-hover:translate-x-0.5 transition-transform" />
             </Link>
           </div>

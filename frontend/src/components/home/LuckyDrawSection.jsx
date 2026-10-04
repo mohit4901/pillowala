@@ -34,6 +34,8 @@ export default function LuckyDrawSection() {
   }, []);
 
   const totalReviews = data?.totalApprovedReviews ?? 0;
+  const totalSubmitted = data?.totalSubmittedReviews ?? totalReviews;
+  const nextReviewNum = data?.nextReviewNumber ?? (totalSubmitted + 1);
   const milestones = data?.milestones || [
     {
       milestoneNumber: 1,

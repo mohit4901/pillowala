@@ -48,6 +48,11 @@ export const submitReview = async (reviewData) => {
   return response.data;
 };
 
+export const checkOrderIdAvailability = async (orderId) => {
+  const response = await api.get(`/reviews/check-order/${encodeURIComponent(orderId)}`);
+  return response.data;
+};
+
 // Image Upload
 export const uploadImage = async (file) => {
   const formData = new FormData();

@@ -357,7 +357,7 @@ export default function IamNavbar() {
                 animate="visible"
                 className="space-y-3 pt-2"
               >
-                {/* Month-End Lucky Draw Card */}
+                {/* Milestone Lucky Draw Card */}
                 <Link
                   to="/review"
                   onClick={() => setIsMobileMenuOpen(false)}
@@ -367,18 +367,18 @@ export default function IamNavbar() {
                     <div className="flex items-center gap-1.5">
                       <Trophy size={14} className="text-yellow-200" />
                       <span className="text-[10px] font-mono-tech font-bold uppercase tracking-wider text-amber-100">
-                        MONTH-END MEGA LUCKY DRAW
+                        MILESTONE CASH DRAW (600, 1000, 1500)
                       </span>
                     </div>
                     <span className="text-[9px] font-mono-tech font-bold px-2 py-0.5 rounded-full bg-black/25 text-white">
-                      3 WINNERS
+                      ₹30K POOL
                     </span>
                   </div>
                   <p className="font-display font-black text-lg uppercase tracking-tight leading-tight">
-                    ENTER ₹30,000 LUCKY DRAW →
+                    ENTER ₹30,000 MILESTONE DRAW →
                   </p>
                   <p className="text-[11px] text-amber-100 font-mono-tech mt-0.5">
-                    Submit review proof to win prizes worth ₹30,000
+                    Submit review proof to win up to ₹15,000 direct cash
                   </p>
                 </Link>
 

@@ -85,6 +85,23 @@ const createReview = async (req, res, next) => {
       });
     }
 
+    // Check if Order ID has already been submitted
+    if (orderId && orderId.trim()) {
+      const cleanOrderId = orderId.trim();
+      const escapedOrderId = cleanOrderId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const existingOrder = await Review.findOne({
+        orderId: { $regex: new RegExp(`^${escapedOrderId}$`, 'i') },
+      });
+
+      if (existingOrder) {
+        return res.status(400).json({
+          success: false,
+          code: 'ORDER_ALREADY_USED',
+          message: `Ye Order ID (${cleanOrderId}) pehle se submit ho chuki hai! Ek order ID se sirf 1 review aur 1 lucky draw entry allow hai.`,
+        });
+      }
+    }
+
     const review = await Review.create({
       customerName: customerName && customerName.trim() ? customerName.trim() : 'Verified Buyer',
       customerEmail: customerEmail && customerEmail.trim() ? customerEmail.trim() : '',
@@ -99,10 +116,15 @@ const createReview = async (req, res, next) => {
       status: 'pending', // Pending admin approval / reward verification
     });
 
+    const totalCount = await Review.countDocuments();
+
     res.status(201).json({
       success: true,
-      message: 'Thank you! Your review has been submitted successfully and is pending approval.',
-      data: review,
+      message: `Thank you! Your review has been recorded as Review #${totalCount} and is entered into the milestone cash draws!`,
+      data: {
+        ...review.toObject(),
+        reviewNumber: totalCount,
+      },
     });
   } catch (error) {
     next(error);
@@ -453,8 +475,43 @@ const getReviewStats = async (req, res, next) => {
   }
 };
 
+// @desc    Check if an order ID is already registered in the system
+// @route   GET /api/reviews/check-order/:orderId
+// @access  Public
+const checkOrderIdAvailability = async (req, res, next) => {
+  try {
+    const { orderId } = req.params;
+    if (!orderId || !orderId.trim()) {
+      return res.status(400).json({ success: false, message: 'Order ID is required' });
+    }
+    const clean = orderId.trim();
+    const escapedOrderId = clean.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const existing = await Review.findOne({
+      orderId: { $regex: new RegExp(`^${escapedOrderId}$`, 'i') },
+    }).select('orderId createdAt purchasePlatform customerName');
+
+    if (existing) {
+      return res.status(200).json({
+        success: true,
+        available: false,
+        code: 'ORDER_ALREADY_USED',
+        message: `Ye Order ID (${clean}) pehle se submit ho chuki hai!`,
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      available: true,
+      message: 'Order ID is available.',
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   createReview,
+  checkOrderIdAvailability,
   getReviews,
   getReviewById,
   updateReviewStatus,
@@ -463,3 +520,4 @@ module.exports = {
   exportReviewsXLSX,
   getReviewStats,
 };
+

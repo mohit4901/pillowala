@@ -8,7 +8,7 @@ export default function StepPlatform({ selectedPlatform, onSelectPlatform, onNex
       id: 'flipkart',
       name: 'Flipkart',
       tagline: 'Ordered via Flipkart App / Website',
-      perk: 'Enter ₹30,000 Monthly Lucky Draw',
+      perk: 'Enter ₹30,000 Milestone Cash Draw (₹5K, ₹10K, ₹15K)',
       logo: 'https://seeklogo.com/images/F/flipkart-logo-3F33927DAA-seeklogo.com.png',
       badge: 'FLIPKART OFFICIAL STORE',
       badgeColor: 'bg-[#2874F0] text-white',
@@ -18,7 +18,7 @@ export default function StepPlatform({ selectedPlatform, onSelectPlatform, onNex
       id: 'meesho',
       name: 'Meesho',
       tagline: 'Ordered via Meesho Mobile App',
-      perk: 'Direct Manufacturer Cashback & VIP Sleep Pass',
+      perk: 'Enter ₹30,000 Milestone Cash Draw & VIP Pass',
       logo: 'https://upload.wikimedia.org/wikipedia/commons/8/80/Meesho_Logo_Full.png',
       badge: 'MEESHO VERIFIED SELLER',
       badgeColor: 'bg-[#9C27B0] text-white',
@@ -43,7 +43,7 @@ export default function StepPlatform({ selectedPlatform, onSelectPlatform, onNex
           WHERE DID YOU PURCHASE?
         </h2>
         <p className="text-stone-500 text-xs sm:text-sm max-w-md mx-auto leading-relaxed">
-          Select the marketplace where you received your Pillowala order package to enter the ₹30,000 monthly lucky draw.
+          Select the marketplace where you received your Pillowala order package to enter the ₹30,000 milestone lucky draws (at 600, 1000 & 1500 reviews).
         </p>
       </div>
 
