@@ -1,0 +1,89 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-display: 'Outfit', 'Plus Jakarta Sans', sans-serif;
+  --font-mono-tech: 'Space Grotesk', monospace;
+
+  --color-iam-black: #0D0D0D;
+  --color-iam-dark: #141414;
+  --color-iam-gray: #71717A;
+  --color-iam-light: #F4F4F5;
+
+  --shadow-float: 0 25px 60px -15px rgba(0, 0, 0, 0.22), 0 10px 24px -8px rgba(0, 0, 0, 0.12);
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    background-color: #FFFFFF;
+    color: #111111;
+    font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+    overflow-x: hidden;
+  }
+}
+
+.font-display {
+  font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
+}
+
+.font-tech {
+  font-family: 'Space Grotesk', monospace;
+}
+
+/* Continuous smooth marquee */
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  display: flex;
+  width: max-content;
+  animation: marquee 32s linear infinite;
+}
+
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+
+/* 3D Floating Pillows Animation */
+@keyframes floatSlow {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-10px) rotate(-1deg);
+  }
+}
+
+.animate-float {
+  animation: floatSlow 6s ease-in-out infinite;
+}
+
+/* Custom modern scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #F4F4F5;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #A1A1AA;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #18181B;
+}

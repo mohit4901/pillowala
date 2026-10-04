@@ -1,0 +1,40 @@
+@import "tailwindcss";
+
+@theme {
+  --color-admin-primary: #8C4A2F;
+  --color-admin-primary-hover: #733B24;
+  --color-admin-accent: #C89B58;
+  --color-admin-sidebar: #1E1D1B;
+
+  --color-marketplace-amazon: #FF9900;
+  --color-marketplace-flipkart: #2874F0;
+  --color-marketplace-meesho: #F43397;
+
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+@layer base {
+  body {
+    background-color: #F8F9FA;
+    color: #1E1D1B;
+  }
+}
+
+/* Custom scrollbar for tables */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #F1F3F5;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #CED4DA;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #ADB5BD;
+}

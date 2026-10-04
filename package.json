@@ -1,0 +1,24 @@
+{
+  "name": "pillowala-platform",
+  "version": "1.0.0",
+  "description": "Production-ready pillow business platform with Customer Frontend, Admin Panel, and Node.js/MongoDB Backend",
+  "scripts": {
+    "dev:backend": "npm run start --prefix backend",
+    "dev:frontend": "npm run dev --prefix frontend",
+    "dev:admin": "npm run dev --prefix admin",
+    "seed": "npm run seed --prefix backend",
+    "build:frontend": "npm run build --prefix frontend",
+    "build:admin": "npm run build --prefix admin"
+  },
+  "keywords": [
+    "pillow-business",
+    "ecommerce",
+    "reviews",
+    "qr-code",
+    "amazon",
+    "flipkart",
+    "meesho"
+  ],
+  "author": "Pillowala",
+  "license": "ISC"
+}
