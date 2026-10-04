@@ -84,6 +84,25 @@ if (process.env.NODE_ENV !== 'production') {
 // Serve uploaded images statically
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+// Root landing endpoint
+app.get('/', (req, res) => {
+  res.status(200).json({
+    success: true,
+    service: 'Pillowala REST API Core',
+    status: 'online',
+    version: '1.0.0',
+    documentation: 'https://github.com/mohit4901/pillowala',
+    endpoints: {
+      health: '/api/health',
+      ready: '/api/ready',
+      ping: '/api/ping',
+      products: '/api/products',
+      reviews: '/api/reviews',
+      luckyDraw: '/api/luckydraw/current',
+    },
+  });
+});
+
 // Lightweight Ping & Health endpoints (placed before rate limiter so monitoring bots & pre-warmup never hit rate limits)
 app.get('/api/ping', (req, res) => {
   res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
